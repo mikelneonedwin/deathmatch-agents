@@ -1,0 +1,13 @@
+{
+  "dependencies": {},
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.2.20",
+    "@types/node": "^24.3.0"
+  },
+  "name": "dm",
+  "private": true,
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
