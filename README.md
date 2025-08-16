@@ -24,7 +24,7 @@ The project allows you to:
 
 ## **Requirements**
 
-- **Node.js** (v18+) — used to run the server and prototype agents.
+- **Node.js** (v23.6.0+) — used to run the server and prototype agents.
 - **Bun** (v1+) — used for Bun-based agents in the current prototype.
 - Both must be installed and available in your system `PATH`.
 
