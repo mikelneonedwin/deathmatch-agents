@@ -1,5 +1,6 @@
 import { createServer } from "net";
-import { spawn } from "child_process";
+import { spawn, type ChildProcessByStdio } from "child_process";
+import type Stream from "stream";
 
 const PORT = 8080;
 
@@ -9,6 +10,7 @@ interface Agent {
   run_cmd: string[];
   pid?: number;
   status: "dead" | "alive";
+  child?: ChildProcessByStdio<Stream.Writable, Stream.Readable, null>;
 }
 
 // ANSI dim code for server logs
@@ -45,25 +47,49 @@ function launchAgents() {
   logServer(`Launching all agents (${agents.length} total)...`);
   for (const agent of agents) {
     const [command, ...args] = agent.run_cmd;
-    const child = spawn(command, args, { stdio: "inherit" });
+    const child = spawn(command, args, {
+      stdio: ["pipe", "pipe", "inherit"], // stdin → write, stdout → read, stderr → inherit
+    });
+
     if (!child.pid) {
       logServer(`Failed to launch ${agent.name}`);
       continue;
     }
 
     agent.pid = child.pid;
+    agent.child = child;
     logServer(`${agent.name} launched successfully (PID=${agent.pid})`);
 
+    child.stdout.setEncoding("utf8");
     child.on("exit", (code, signal) => {
       logServer(`${agent.name} exited (code=${code}, signal=${signal})`);
       agent.status = "dead";
     });
+    child.stdout.on("data", (data) => {
+      if (typeof data !== "string") return;
+      else if (!data.includes("MESSAGE:")) {
+        return console.log(data.slice(0, data.length - 1));
+      } else {
+        logServer(
+          `Signal from ${agent.name} - ${data.match(/(?<=MESSAGE:).*/)?.[0]}`
+        );
+      }
 
-    // Pause each agent after a short delay
-    setTimeout(() => {
-      logServer(`Pausing ${agent.name}`);
-      child.kill("SIGTSTP");
-    }, 500); // 0.5s to allow agent to log activation
+      // TODO RESPOND TO SIGNALS
+    });
+
+    // TODO LOG REGULAR SIGNALS FROM THE CHILD THAT ARE NOT MESSAGES
+    // NOTE AWAIT READY SIGNAL FROM CHILD
+    // NOTE SEND START SIGNAL TO CHILD
+    // child.stdin?.write("START!\n");
+
+    // child.send("START SIGNAL");
+
+    // // Pause each agent after a short delay
+    // setTimeout(() => {
+    //   logServer(`Pausing ${agent.name}`);
+    //   child.kill("SIGTSTP");
+    // }, 500); // 0.5s to allow agent to log activation
   }
 }
 
@@ -73,7 +99,8 @@ function executeAgents() {
     setTimeout(() => {
       if (!agent.pid) return;
       logServer(`Resuming ${agent.name}`);
-      process.kill(agent.pid, "SIGCONT");
+      agent.child?.stdin.write("Begin!\n");
+      // process.kill(agent.pid, "SIGCONT");
     }, idx * 500); // 0.5s apart
   });
 }
