@@ -1,4 +1,3 @@
-import { createServer } from "net";
 import { spawn, type ChildProcessByStdio } from "child_process";
 import type Stream from "stream";
 
@@ -96,24 +95,18 @@ function launchAgents() {
 function executeAgents() {
   // Resume agents staggered for predictable order
   agents.forEach((agent, idx) => {
-    setTimeout(() => {
+    // setTimeout(() => {
       if (!agent.pid) return;
-      logServer(`Resuming ${agent.name}`);
+      logServer(`Unleashing ${agent.name}`);
       agent.child?.stdin.write("Begin!\n");
       // process.kill(agent.pid, "SIGCONT");
-    }, idx * 500); // 0.5s apart
+    // }, idx * 500); // 0.5s apart
   });
 }
 
-const server = createServer(() => {
-  logServer("New agent connected");
-});
-
-server.listen(PORT, () => {
-  logServer(`Listening for agent connections on port ${PORT}`);
-  launchAgents();
-  // Resume agents after 2s total
-  setTimeout(() => {
-    executeAgents();
-  }, 2000);
-});
+// logServer(`Listening for agent connections on port ${PORT}`);
+launchAgents();
+// Resume agents after 2s total
+setTimeout(() => {
+  executeAgents();
+}, 2000);

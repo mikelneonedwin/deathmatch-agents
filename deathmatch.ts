@@ -27,11 +27,12 @@ const timer = setInterval(() => {
 
 process.stdin.on("data", (data) => {
   // NOTE PROCESS START SIGNAL
-  sleepMain(Math.round(Math.random() * 2000))
+  // sleepMain(Math.round(Math.random() * 2000))
+  yieldMain()
   logAgent("CPU Burst Activated");
   // yieldMain();
   sleepMain(Math.round(Math.random() * 2000))
-  logAgent("Resuming main tasks...");
+  logAgent("Hunting opponents...");
 });
 
 // NOTE SEND READY SIGNAL TO SERVER
