@@ -10,7 +10,7 @@
 
     // Bundler mode
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": true, // <-- require explicit file extensions
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
@@ -18,7 +18,6 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
-    // "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
     // Some stricter flags (disabled by default)

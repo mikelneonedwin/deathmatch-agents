@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { sleepMain, yieldMain } from "./node-yield/index.ts";
 
 const name = process.argv[2];
 const color = process.argv[3] || "\x1b[0m"; // ANSI color code passed from server
@@ -18,7 +19,6 @@ const timer = setInterval(() => {
 
 // Handle pause from server
 const SIGTSTPHandler = () => {
-  execSync("sleep 1");
   logAgent("Paused by server");
   process.off("SIGTSTP", SIGTSTPHandler);
   process.kill(process.pid, "SIGTSTP");
@@ -30,12 +30,12 @@ process.on("SIGCONT", () => {
   logAgent("Resumed");
 
   // Perform a sleepable syscall immediately to yield CPU
-  // Option 1: Blocking sleep using execSync
-  execSync("sleep 1"); // sleep 100ms
+  sleepMain(2000);
+  logAgent("CPU Burst Activated");
 
   setImmediate(() => {
     logAgent("Resuming main tasks...");
-    execSync("sleep 1");
+    yieldMain();
     logAgent("Fetching processes");
 
     // Get PID and full command line

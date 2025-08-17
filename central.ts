@@ -24,8 +24,14 @@ const agents: Agent[] = [
   },
   {
     name: "Bun",
-    color: "\x1b[33m", // amber
-    run_cmd: ["bun", "deathmatch.ts", "Bun", "\x1b[33m", PORT.toString()],
+    color: "\x1b[38;2;249;241;225m", // #f9f1e1
+    run_cmd: [
+      "bun",
+      "deathmatch.ts",
+      "Bun",
+      "\x1b[38;2;249;241;225m",
+      PORT.toString(),
+    ],
     status: "alive",
   },
 ];
@@ -40,7 +46,6 @@ function launchAgents() {
   for (const agent of agents) {
     const [command, ...args] = agent.run_cmd;
     const child = spawn(command, args, { stdio: "inherit" });
-
     if (!child.pid) {
       logServer(`Failed to launch ${agent.name}`);
       continue;
@@ -56,8 +61,8 @@ function launchAgents() {
 
     // Pause each agent after a short delay
     setTimeout(() => {
-      child.kill("SIGTSTP");
       logServer(`Pausing ${agent.name}`);
+      child.kill("SIGTSTP");
     }, 500); // 0.5s to allow agent to log activation
   }
 }
@@ -67,8 +72,8 @@ function executeAgents() {
   agents.forEach((agent, idx) => {
     setTimeout(() => {
       if (!agent.pid) return;
-      process.kill(agent.pid, "SIGCONT");
       logServer(`Resuming ${agent.name}`);
+      process.kill(agent.pid, "SIGCONT");
     }, idx * 500); // 0.5s apart
   });
 }
