@@ -33,8 +33,10 @@ process.on("SIGCONT", () => {
   // Option 1: Blocking sleep using execSync
   execSync("sleep 1"); // sleep 100ms
 
-  setTimeout(() => {
+  setImmediate(() => {
     logAgent("Resuming main tasks...");
+    execSync("sleep 1");
+    logAgent("Fetching processes");
 
     // Get PID and full command line
     const output = execSync("ps -eo pid,args").toString(); // args = full command with arguments
@@ -49,7 +51,6 @@ process.on("SIGCONT", () => {
         return { pid, cmd };
       })
       .filter(({ cmd }) => cmd.includes("deathmatch.ts"));
-    console.log(processes);
   });
 });
 
