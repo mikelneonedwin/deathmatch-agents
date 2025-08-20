@@ -1,4 +1,9 @@
-import { spawn, type ChildProcessByStdio } from "child_process";
+import {
+  ChildProcess,
+  spawn,
+  spawnSync,
+  type ChildProcessByStdio,
+} from "child_process";
 import type Stream from "stream";
 
 const PORT = 8080;
@@ -38,8 +43,51 @@ const agents: Agent[] = [
 ];
 
 // Helper for dimmed server logs
-function logServer(msg: string) {
-  console.log(`${DIM}[Server] ${msg}${RESET}`);
+function logServer(msg: string, ...logs: any[]) {
+  console.log(`${DIM}[Server] ${msg}${RESET}`, ...logs);
+}
+
+const activeAgents = new Set<Agent>();
+function nullifyAgent(agent: Agent) {
+  activeAgents.delete(agent);
+}
+
+// LAUNCH AGENTS
+function launchAgents2(): Array<ChildProcess> {
+  logServer(`launching all agents (${agents.length} total)`);
+  return agents
+    .map((agent) => {
+      const [command, ...args] = agent.run_cmd;
+      const child = spawn(command, args, {
+        stdio: ["pipe", "pipe", "inherit"],
+      });
+      if (child.pid) {
+        return logServer(`unable to launch ${agent.name}`);
+      }
+      logServer(`${agent.name} launched successfully (PID=${agent.pid})`);
+      child.on("exit", (code, signal) => {
+        logServer(`${agent.name} exited (code=${code}, signal=${signal})`);
+        nullifyAgent(agent);
+      });
+      child.stdout.on("data", (data) => {
+        if (typeof data !== "string") return;
+        else if (!data.includes("MESSAGE:")) {
+          return console.log(data.slice(0, data.length - 1));
+        } else {
+          const message = data.match(/(?<=MESSAGE:).*/)?.[0]!;
+          logServer(`Signal from ${agent.name} - ${message}`);
+          handleMessageFromChild(message);
+        }
+
+        // TODO RESPOND TO SIGNALS
+      });
+      return child;
+    })
+    .filter((x) => !!x);
+}
+
+function handleMessageFromChild(msg: string) {
+  
 }
 
 function launchAgents() {
@@ -49,7 +97,6 @@ function launchAgents() {
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "inherit"], // stdin → write, stdout → read, stderr → inherit
     });
-
     if (!child.pid) {
       logServer(`Failed to launch ${agent.name}`);
       continue;
@@ -64,14 +111,19 @@ function launchAgents() {
       logServer(`${agent.name} exited (code=${code}, signal=${signal})`);
       agent.status = "dead";
     });
+
     child.stdout.on("data", (data) => {
       if (typeof data !== "string") return;
       else if (!data.includes("MESSAGE:")) {
         return console.log(data.slice(0, data.length - 1));
       } else {
-        logServer(
-          `Signal from ${agent.name} - ${data.match(/(?<=MESSAGE:).*/)?.[0]}`
-        );
+        const message = data.match(/(?<=MESSAGE:).*/)?.[0]!;
+        logServer(`Signal from ${agent.name} - ${message}`);
+        switch (message) {
+          case "Ready!": {
+            // UPDATE list
+          }
+        }
       }
 
       // TODO RESPOND TO SIGNALS
@@ -96,10 +148,10 @@ function executeAgents() {
   // Resume agents staggered for predictable order
   agents.forEach((agent, idx) => {
     // setTimeout(() => {
-      if (!agent.pid) return;
-      logServer(`Unleashing ${agent.name}`);
-      agent.child?.stdin.write("Begin!\n");
-      // process.kill(agent.pid, "SIGCONT");
+    if (!agent.pid) return;
+    logServer(`Unleashing ${agent.name}`);
+    agent.child?.stdin.write("Begin!\n");
+    // process.kill(agent.pid, "SIGCONT");
     // }, idx * 500); // 0.5s apart
   });
 }
